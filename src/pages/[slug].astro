@@ -1,0 +1,61 @@
+---
+import { contentfulClient } from "../lib/contentful";
+import { createRenderOptions } from "../lib/contentful-renderer";
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import Layout from '../layouts/Layout.astro';
+import type { EntrySkeletonType } from "contentful";
+
+const { slug } = Astro.params;
+
+// Fetch the specific page by slug
+const entries = await contentfulClient.getEntries<EntrySkeletonType>({
+  content_type: "navbarPages",
+  "fields.slug": slug,
+});
+
+const page: any = entries.items[0];
+
+
+// If no page found, return 404
+if (!page) {
+  return Astro.redirect('/404');
+}
+
+console.log(page);
+
+// Generate static paths for all navbar pages
+export async function getStaticPaths() {
+  const entries = await contentfulClient.getEntries<EntrySkeletonType>({
+    content_type: "navbarPages",
+  });
+  
+  // Collect all child page IDs
+  const childPageIds = new Set();
+  entries.items.forEach((item: any) => {
+    if (item.fields.childPages) {
+      item.fields.childPages.forEach((child: any) => {
+        childPageIds.add(child.sys.id);
+      });
+    }
+  });
+  
+  return entries.items
+    .filter((item: any) => !item.fields.externalLinkUrl) // Only include internal pages
+    .map((item: any) => ({
+      params: { slug: item.fields.slug },
+    }));
+}
+---
+
+<Layout>
+
+<div class="container mx-auto mt-4 px-4 sm:px-6 lg:px-8">
+	<main>
+		<h1>{page.fields.pageTitle}</h1>
+    
+    {page.fields.pageContent && (
+      <div set:html={documentToHtmlString(page.fields.pageContent, createRenderOptions(page.fields.pageContent))} />
+    )}
+	</main>
+	</div>
+</Layout>

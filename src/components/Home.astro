@@ -1,0 +1,97 @@
+---
+import { ArrowRight, Sparkles, Zap, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { contentfulClient } from "../lib/contentful";
+import type { EntrySkeletonType } from "contentful";
+import { marked } from 'marked';
+
+const entries = await contentfulClient.getEntries<EntrySkeletonType>({
+  content_type: "blog",
+});
+
+const heroEntry = entries.items.find(
+  (item) => item.fields.featuredItem === true && item.fields.sortOrder === 1
+);
+console.log(JSON.stringify(heroEntry));
+
+const cards = entries.items.filter(
+  (item) =>
+    item.fields.featuredItem === true &&
+    (item.fields.sortOrder === 2 || item.fields.sortOrder === 3)
+);
+---
+    <div class="w-full">
+      {/* Hero Section with Background Image */}
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <section class="relative max-h-[500px] h-[500px] overflow-hidden rounded-2xl mt-8 mb-4">
+          {/* Background Image */}
+          <div 
+            class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ 
+              backgroundImage: heroEntry && heroEntry.fields.image && typeof heroEntry.fields.image === 'object' && 'fields' in heroEntry.fields.image && heroEntry.fields.image.fields.file.url
+                ? `url(https:${heroEntry.fields.image.fields.file.url})`
+                : 'url(https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1920&q=80)',
+            }}
+          >
+            {/* Optional overlay for better readability */}
+            <div class="absolute inset-0 bg-black/20"></div>
+          </div>
+
+          {/* Text Box - Anchored to Bottom */}
+          <div class="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm">
+            <div class="px-6 sm:px-8 lg:px-12 py-12">
+              <h3 class="text-3xl md:text-4xl font-bold text-white mb-4">
+                {heroEntry ? heroEntry.fields.title : ""}
+              </h3>
+              {heroEntry && heroEntry.fields.description && (
+                <div class="w-full text-lg text-white/90 mb-6 leading-relaxed" set:html={marked.parse(heroEntry.fields.description.toString())}>
+                </div>
+              )}
+              <a
+                href={heroEntry ? `/blog/${heroEntry.fields.slug}` : "#"}
+                class="inline-flex items-center gap-2 text-white px-8 py-6 text-lg rounded-xl shadow-xl transition-all duration-300 hover:scale-105 hover:opacity-90"
+                style={{ background: 'linear-gradient(to right, #E20000, #B00000)', boxShadow: '0 20px 25px -5px rgba(226, 0, 0, 0.2)' }}
+              >
+                <span>Read More</span>
+                <ArrowRight className="w-5 h-5" style={{ verticalAlign: 'middle' }} />
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Two Cards Section */}
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="grid md:grid-cols-2 gap-8">
+          {cards.map((card, index) => (
+            <div class="flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden">
+              {/* Card Header with Background Image */}
+              <div 
+                class="h-[150px] bg-cover bg-center"
+                style={{ backgroundImage: card.fields.image && typeof card.fields.image === 'object' && 'fields' in card.fields.image && card.fields.image.fields.file.url ? `url(https:${card.fields.image.fields.file.url})` : undefined }}
+              ></div>
+              {/* Card Body */}
+              <div class="flex-1 p-8 flex flex-col">
+                <h4 class="text-2xl font-bold text-slate-900 mb-4">
+                  {card.fields.title}
+                </h4>
+                <div class="text-slate-600 leading-relaxed mb-6 flex-1" set:html={marked.parse(card.fields.description.toString())}>
+                </div>
+                <a
+                  href={card.fields.slug ? `/blog/${card.fields.slug}` : "#"}
+                  class="inline-flex items-center gap-2 border-2 transition-all duration-300 hover:bg-slate-50 self-start px-4 py-2 rounded-lg font-medium"
+                  style="border-color: #E20000; color: #E20000;"
+                  onmouseenter="this.style.backgroundColor='#E20000';this.style.color='white';"
+                  onmouseleave="this.style.backgroundColor='transparent';this.style.color='#E20000';"
+                >
+                  <span>Read More</span>
+                  <ArrowRight className="w-4 h-4" style={{ verticalAlign: 'middle' }} />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      
+    </div>

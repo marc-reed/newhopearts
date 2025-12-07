@@ -1,0 +1,202 @@
+---
+// AstroHeader.astro: Converted from ReactHeader.tsx
+import { contentfulClient } from "../lib/contentful";
+import type { EntrySkeletonType } from "contentful";
+
+const navbarPages = await contentfulClient.getEntries<EntrySkeletonType>({
+  content_type: "navbarPages",
+  order: ['fields.sortOrder'],
+});
+
+// Collect all child page IDs to filter them from root level
+const childPageIds = new Set();
+navbarPages.items.forEach((item: any) => {
+  if (item.fields.childPages) {
+    item.fields.childPages.forEach((child: any) => {
+      childPageIds.add(child.sys.id);
+    });
+  }
+});
+---
+<header>
+  <nav class="sticky top-0 z-50 shadow-lg" style="background-color: #E20000;">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo -->
+        <a href="/" class="flex items-center space-x-2 group">
+          <img src="/new-hope-arts-online-logo.png" class="h-10 w-auto object-contain" alt="New Hope Arts Logo" />
+        </a>
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex items-center space-x-1">
+          {navbarPages.items
+            .filter((item: any) => !childPageIds.has(item.sys.id))
+            .map((item: any) => {
+              const hasChildren = item.fields.childPages && item.fields.childPages.length > 0;
+              const href = item.fields.externalLinkUrl || `/${item.fields.slug}`;
+              const target = item.fields.externalLinkUrl ? '_blank' : undefined;
+              const rel = item.fields.externalLinkUrl ? 'noopener noreferrer' : undefined;
+              
+              if (hasChildren) {
+                return (
+                  <div class="relative group">
+                    <button 
+                      class="px-4 py-2 rounded-lg font-medium transition-all duration-300 text-white hover:bg-white/10 flex items-center gap-1"
+                    >
+                      {item.fields.navbarLinkText}
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      {item.fields.childPages.map((childPage: any) => {
+                        const childHref = childPage.fields.externalLinkUrl || `/${childPage.fields.slug}`;
+                        const childTarget = childPage.fields.externalLinkUrl ? '_blank' : undefined;
+                        const childRel = childPage.fields.externalLinkUrl ? 'noopener noreferrer' : undefined;
+                        return (
+                          <a
+                            href={childHref}
+                            target={childTarget}
+                            rel={childRel}
+                            class="block px-4 py-2 text-gray-800 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg no-underline"
+                          >
+                            {childPage.fields.navbarLinkText}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <a 
+                  href={href} 
+                  target={target}
+                  rel={rel}
+                  class="px-4 py-2 rounded-lg font-medium transition-all duration-300 text-white hover:bg-white/10 no-underline"
+                >
+                  {item.fields.navbarLinkText}
+                </a>
+              );
+            })}
+        </div>
+        <!-- Mobile menu button -->
+        <button id="mobile-menu-button" class="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors" aria-label="Toggle menu">
+          <svg id="menu-icon" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <svg id="close-icon" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- Mobile Navigation -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-white/20" style="background-color: #E20000;">
+      <div class="px-4 py-3 space-y-1">
+        {navbarPages.items
+          .filter((item: any) => !childPageIds.has(item.sys.id))
+          .map((item: any) => {
+            const hasChildren = item.fields.childPages && item.fields.childPages.length > 0;
+            const href = item.fields.externalLinkUrl || `/${item.fields.slug}`;
+            const target = item.fields.externalLinkUrl ? '_blank' : undefined;
+            const rel = item.fields.externalLinkUrl ? 'noopener noreferrer' : undefined;
+            
+            if (hasChildren) {
+              return (
+                <div class="mobile-dropdown">
+                  <button 
+                    class="mobile-dropdown-toggle w-full text-left px-4 py-3 rounded-lg font-medium transition-all duration-300 text-white hover:bg-white/10 flex justify-between items-center"
+                  >
+                    {item.fields.navbarLinkText}
+                    <svg class="w-4 h-4 mobile-dropdown-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div class="mobile-dropdown-content hidden pl-4 space-y-1">
+                    {item.fields.childPages.map((childPage: any) => {
+                      const childHref = childPage.fields.externalLinkUrl || `/${childPage.fields.slug}`;
+                      const childTarget = childPage.fields.externalLinkUrl ? '_blank' : undefined;
+                      const childRel = childPage.fields.externalLinkUrl ? 'noopener noreferrer' : undefined;
+                      return (
+                        <a
+                          href={childHref}
+                          target={childTarget}
+                          rel={childRel}
+                          class="block px-4 py-2 rounded-lg font-medium transition-all duration-300 text-white hover:bg-white/10 no-underline"
+                        >
+                          {childPage.fields.navbarLinkText}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            
+            return (
+              <a 
+                href={href}
+                target={target}
+                rel={rel}
+                class="block px-4 py-3 rounded-lg font-medium transition-all duration-300 text-white hover:bg-white/10 no-underline"
+              >
+                {item.fields.navbarLinkText}
+              </a>
+            );
+          })}
+      </div>
+    </div>
+  </nav>
+</header>
+
+<script>
+  // Mobile menu toggle functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const menuIcon = document.getElementById('menu-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    if (mobileMenuButton && mobileMenu && menuIcon && closeIcon) {
+      mobileMenuButton.addEventListener('click', function() {
+        // Toggle mobile menu visibility
+        mobileMenu.classList.toggle('hidden');
+        
+        // Toggle icons
+        menuIcon.classList.toggle('hidden');
+        closeIcon.classList.toggle('hidden');
+        
+        // Update aria-label for accessibility
+        const isMenuOpen = !mobileMenu.classList.contains('hidden');
+        mobileMenuButton.setAttribute('aria-label', isMenuOpen ? 'Close menu' : 'Toggle menu');
+      });
+
+      // Close mobile menu when clicking on a link (for better UX)
+      const mobileLinks = mobileMenu.querySelectorAll('a');
+      mobileLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          mobileMenu.classList.add('hidden');
+          menuIcon.classList.remove('hidden');
+          closeIcon.classList.add('hidden');
+          mobileMenuButton.setAttribute('aria-label', 'Toggle menu');
+        });
+      });
+    }
+
+    // Mobile dropdown toggle functionality
+    const mobileDropdowns = document.querySelectorAll('.mobile-dropdown');
+    mobileDropdowns.forEach(dropdown => {
+      const toggle = dropdown.querySelector('.mobile-dropdown-toggle');
+      const content = dropdown.querySelector('.mobile-dropdown-content');
+      const icon = dropdown.querySelector('.mobile-dropdown-icon');
+
+      if (toggle && content && icon) {
+        toggle.addEventListener('click', function() {
+          content.classList.toggle('hidden');
+          icon.classList.toggle('rotate-180');
+        });
+      }
+    });
+  });
+</script>

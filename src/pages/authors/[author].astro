@@ -1,0 +1,26 @@
+---
+import authors from '../../data/authors.json';
+
+// Add a type to allow string indexing
+type Author = { name: string; bio: string; website: string };
+const typedAuthors: Record<string, Author> = authors;
+
+export function getStaticPaths() {
+    const authorKeys = Object.keys(authors);
+    return authorKeys.map((author) => ({
+        params: { author },
+    }));
+}
+
+const { author } = Astro.params;
+const authorData = author ? typedAuthors[author!] : undefined;
+---
+<html>  
+    <head>
+        <title>Author: {authorData!.name}</title>
+    </head>
+    <body>
+        <h1>{authorData!.name}</h1>
+        <p>{authorData!.bio}</p>
+    </body>
+</html>

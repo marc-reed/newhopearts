@@ -1,0 +1,50 @@
+---
+import { contentfulClient } from "../../lib/contentful";
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import { createRenderOptions } from "../../lib/contentful-renderer";
+import type { Asset } from "contentful";
+import type { EntryFieldTypes } from "contentful";
+import type { Document } from "@contentful/rich-text-types";
+import Layout from '../../layouts/Layout.astro';
+
+const { blog } = Astro.params;
+
+interface BlogPost {
+  contentTypeId: "blog",
+  fields: {
+    title: EntryFieldTypes.Text,
+    description: Document,
+    content: Document,
+    slug: EntryFieldTypes.Text,
+    image?: Asset;
+    file?: Asset;
+
+  }
+}
+
+const entries = await contentfulClient.getEntries<BlogPost>({
+  content_type: "blog",
+  "fields.slug": blog,
+});
+const post: any = entries.items[0];
+
+export async function getStaticPaths() {
+  const entries = await contentfulClient.getEntries<BlogPost>({
+    content_type: "blog",
+  });
+  return entries.items.map((item) => ({
+    params: { blog: item.fields.slug },
+  }));
+}
+
+
+---
+    <Layout>
+      
+      <div class="container mx-auto mt-4 px-4 sm:px-6 lg:px-8">
+        <main>
+          <h1>{post.fields.title}</h1>
+        <div set:html={documentToHtmlString(post.fields.content, createRenderOptions(post.fields.content))} />
+        </main>
+      </div>
+    </Layout>

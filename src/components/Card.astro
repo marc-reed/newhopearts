@@ -1,0 +1,17 @@
+---
+const ourName = "Your Name";
+const { greeting, name } = Astro.props;
+---
+<slot/>
+<h3>{greeting}, {name}!</h3>
+<h1>Welcome to Astro, {ourName}!</h1>
+
+<style>
+    h1 {
+        color: purple;
+    }
+</style>
+
+<script is:inline>
+    console.log("Astro will not process this script for optimizations, bundling with other scripts, or TypeScript compilation. The script content is rendered directly into the final HTML output exactly as written.  Does not support Typescript.");
+</script>

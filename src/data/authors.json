@@ -1,0 +1,12 @@
+{
+    "john_doe": {
+        "name": "John Doe",
+        "bio": "A passionate writer and web developer.",
+        "website": "https://johndoe.com"
+    },
+    "jane_smith": {
+        "name": "Jane Smith",
+        "bio": "Tech enthusiast and blogger.",
+        "website": "https://janesmith.io"
+    }
+}
