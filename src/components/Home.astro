@@ -18,7 +18,7 @@ const cards = entries.items.filter(
   (item) =>
     item.fields.featuredItem === true &&
     (item.fields.sortOrder === 2 || item.fields.sortOrder === 3)
-);
+).sort((a, b) => Number(a.fields.sortOrder ?? 0) - Number(b.fields.sortOrder ?? 0));
 ---
     <div class="w-full">
       {/* Hero Section with Background Image */}

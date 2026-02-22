@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Environment variables are set in Netlify UI, not here
+# Go to: Site settings > Environment variables
+# Add: CONTENTFUL_SPACE_ID, CONTENTFUL_DELIVERY_TOKEN
