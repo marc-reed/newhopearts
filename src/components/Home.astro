@@ -66,10 +66,15 @@ const cards = entries.items.filter(
           {cards.map((card, index) => (
             <div class="flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden">
               {/* Card Header with Background Image */}
-              <div 
-                class="h-[150px] bg-cover bg-center"
-                style={{ backgroundImage: card.fields.image && typeof card.fields.image === 'object' && 'fields' in card.fields.image && card.fields.image.fields.file.url ? `url(https:${card.fields.image.fields.file.url})` : undefined }}
-              ></div>
+              <a
+                href={card.fields.slug ? `/blog/${card.fields.slug}` : "#"}
+                class="block"
+              >
+                <div 
+                  class="h-[150px] bg-cover bg-center"
+                  style={{ backgroundImage: card.fields.image && typeof card.fields.image === 'object' && 'fields' in card.fields.image && card.fields.image.fields.file.url ? `url(https:${card.fields.image.fields.file.url})` : undefined }}
+                ></div>
+              </a>
               {/* Card Body */}
               <div class="flex-1 p-8 flex flex-col">
                 <h4 class="text-2xl font-bold text-slate-900 mb-4">
@@ -92,6 +97,7 @@ const cards = entries.items.filter(
           ))}
         </div>
       </div>
-
-      
+      <div class="flex justify-center my-8">
+        <a href="https://www.visitpa.com/" target="_blank" rel="noopener noreferrer"><img src="/logo_visitPA.png" alt="Visit PA Logo" width="300" height="138"/></a>
+      </div>
     </div>
