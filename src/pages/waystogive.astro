@@ -1,0 +1,81 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { contentfulClient } from '../lib/contentful';
+
+const printMailGiftFormAsset = await contentfulClient.getAsset('3yHXFZtsdjG935hgW52xjt');
+const printMailGiftFormUrl = printMailGiftFormAsset?.fields?.file?.url
+  ? `https:${printMailGiftFormAsset.fields.file.url}`
+  : '#';
+const giftsOfSecuritiesFormAsset = await contentfulClient.getAsset('1MOCwgTrAYWZvQoS6LmXY6');
+const giftsOfSecuritiesFormUrl = giftsOfSecuritiesFormAsset?.fields?.file?.url
+  ? `https:${giftsOfSecuritiesFormAsset.fields.file.url}`
+  : '#';
+---
+
+<Layout>
+  <div class="container mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+    <main>
+      <h1 class="text-4xl font-bold mb-6">Ways to Give</h1>
+      
+      <div class="prose max-w-none">
+
+        <h3 class="text-2xl font-semibold mb-4 mt-8">Your gift to New Hope Arts helps us fulfill our mission: to provide patrons with opportunities to be inspired, educated, challenged and fulfill their life purpose through art. Thank you for your generous support.</h3>
+
+        <p class="mb-2">New Hope Arts is a tax-exempt organization under section 501(c)(3) of the Internal Revenue Code. EIN: 47-0856996</p>
+
+        <p class="mb-2">Your gift to New Hope Arts can be made in the following ways:</p>
+        <p class="mb-2">
+          You can make a secure donation online via PayPal by clicking the button below:
+        </p>
+        <h3>Online</h3>
+        <p class="mb-2">
+          Making an unrestricted donation online is the quickest way to put your gift to work. This method is secure and allows you the opportunity to set up a monthly donation.
+        </p>
+        <a 
+          href="https://www.paypal.com/donate/?hosted_button_id=QB9YE5XCBQJHW" 
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-3 px-6 py-3 rounded-lg font-medium transition-all duration-300 text-white hover:opacity-90 no-underline mt-2 mb-2"
+          style="background: #242424;"
+        >
+              <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="25" height="25" viewBox="0,0,256,256">
+                <g fill="#ffffff" fill-rule="nonzero" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal"><g transform="scale(5.12,5.12)"><path d="M11.40625,2c-1,0 -1.89453,0.6875 -2.09375,1.6875c0,0 -5.89844,27.00781 -7,32.40625c-0.19922,1.10156 0.07422,1.69531 0.375,2.09375c0.39844,0.5 1.01172,0.8125 1.8125,0.8125h7.5l5.90625,-27.1875c0.19922,-1 1.10547,-2.8125 3.90625,-2.8125h16.1875c-1.39844,-4.60156 -5.89453,-7 -10.09375,-7zM22,11.09375l-1.59375,0.3125c-0.30078,0.19922 -0.49219,0.60547 -0.59375,0.90625l-2.40625,11.1875c0.69922,-0.30078 1.38672,-0.40625 2.1875,-0.40625h7.21875c6.39844,0 9.98828,-2.58594 11.1875,-8.1875c0.19922,-1 0.3125,-1.79297 0.3125,-2.59375l-0.125,-1.125v-0.09375zM40.09375,11.3125l0.09375,0.6875c0.10156,1 -0.08203,1.89453 -0.28125,3.09375c-1.39844,6.5 -5.91797,9.8125 -13.21875,9.8125h-7.1875c-1.60156,0 -2.69922,0.69922 -3,2c-0.39844,1.80078 -3.89844,18.29297 -4,18.59375c-0.10156,0.5 0.00781,1.1875 0.40625,1.6875c0.30078,0.39844 0.78125,0.8125 1.78125,0.8125h8c1,0 1.92578,-0.71094 2.125,-1.8125c0.89844,-3.80078 2.08594,-9.57422 2.1875,-9.875c0,-0.10156 0.09375,-0.3125 0.09375,-0.3125h5.3125c7.80078,0 13.69531,-4.6875 15.09375,-12.1875c1,-4.60156 -0.29297,-7.52344 -1.59375,-9.125c-1.80078,-2.30078 -5.11328,-3.375 -5.8125,-3.375z"></path></g></g>
+              </svg>
+              <span>Donate Online</span>
+        </a>
+        <h3>Phone</h3>
+        <p class="mb-2">
+          our contribution can be made by phone during the business day (9:00 am - 5:00 pm EST) by calling <strong>(267) 740-2653</strong>. Please have your credit card (Visa, MasterCard, American Express), donation amount, and contact information ready when you call.
+        </p>
+        <h3>Mail</h3>
+        <p class="mb-2">
+          Please download a <a href={printMailGiftFormUrl} target="_blank" rel="noopener noreferrer">Print & Mail Gift Form</a> and send it along with your check or provided Credit Card information.
+        </p>
+        <p class="mb-2">Mail to: <em>New Hope Arts, 2 Stockton Ave, New Hope, PA 18938</em></p>
+
+        <h3>Gifts of Securities</h3>
+        <p class="mb-2">
+          There are many advantages to making a donation of appreciated stock or exchange-traded funds (ETFs) to New Hope Arts. You receive a charitable tax deduction for the full value and avoid having to pay a capital gain tax. Consult your tax advisor for more information. Most importantly, your gift makes a lasting and important impact.
+        </p>
+        <p class="mb-2">
+          Please fill out a printable <a href={giftsOfSecuritiesFormUrl} target="_blank" rel="noopener noreferrer">Gifts of Securities Transaction form</a> and either email it or mail it to New Hope Arts.
+        </p>
+
+        <p class="mb-2">Email: <a href="mailto:development@newhopearts.org">development@newhopearts.org</a></p>
+
+        <p class="mb-2">Mail to: <em>New Hope Arts, 2 Stockton Ave, New Hope, PA 18938</em></p>
+
+        <p class="mb-2">Stock donations should be transferred directly by your broker to New Hope Arts' brokerage account. More information can be found in the <a href={giftsOfSecuritiesFormUrl} target="_blank" rel="noopener noreferrer">Gifts of Securities Transaction form</a>.</p>
+
+        <h3>Other Ways to Give</h3>
+
+        <p class="mb-2">Other ways to consider giving are Corporate Matching Gift Programs, Charitable IRA Rollovers, Donor Advised Funds, and Bequests. If you have questions or need further information call us at (267) 740-2653.</p>
+
+        <p class="mb-2"><strong>Questions?</strong> Please email us at <a href="mailto:development@newhopearts.org">development@newhopearts.org</a> or call us at <strong>(267) 740-2653</strong>.</p>
+        
+
+
+      </div>
+    </main>
+  </div>
+</Layout>
