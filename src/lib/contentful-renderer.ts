@@ -1,5 +1,6 @@
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
 import type { Document } from "@contentful/rich-text-types";
+import * as XLSX from "xlsx";
 
 function getScaledDimensions(width: number, height: number, max: number = 400) {
   if (width <= max && height <= max) return { width, height };
@@ -46,12 +47,174 @@ function findImageSlideshowEntries(doc: Document): any[] {
   return entries;
 }
 
+function findSpreadsheetToListEntries(doc: Document): any[] {
+  const entries: any[] = [];
+
+  function traverse(node: any) {
+    if (
+      node.nodeType === 'embedded-entry-inline' &&
+      node.data?.target?.sys?.contentType?.sys?.id === 'spreadSheetToList'
+    ) {
+      entries.push(node.data.target);
+    }
+    if (node.content && Array.isArray(node.content)) {
+      node.content.forEach((child: any) => traverse(child));
+    }
+  }
+
+  traverse(doc);
+  return entries;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeKey(value: string): string {
+  return value.toLowerCase().replace(/[\s_-]/g, '');
+}
+
+function getRowValue(row: Record<string, unknown>, keys: string[]): string {
+  const normalizedCandidates = keys.map(normalizeKey);
+
+  for (const [key, value] of Object.entries(row)) {
+    if (normalizedCandidates.includes(normalizeKey(key))) {
+      return String(value ?? '').trim();
+    }
+  }
+
+  return '';
+}
+
+async function buildSpreadsheetMarkupByEntryId(doc: Document): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  const entries = findSpreadsheetToListEntries(doc);
+
+  for (const entry of entries) {
+    const entryId = entry?.sys?.id;
+    if (!entryId || result.has(entryId)) {
+      continue;
+    }
+
+    if (entry?.fields?.type !== 'LastNameFirstNameUrl') {
+      result.set(entryId, '');
+      continue;
+    }
+
+    const spreadsheetAsset = entry?.fields?.spreadsheet;
+    if (
+      spreadsheetAsset?.sys?.type !== 'Asset' ||
+      !spreadsheetAsset?.fields?.file?.url
+    ) {
+      result.set(entryId, '');
+      continue;
+    }
+
+    const spreadsheetUrl = `https:${spreadsheetAsset.fields.file.url}`;
+
+    try {
+      const response = await fetch(spreadsheetUrl);
+      if (!response.ok) {
+        result.set(entryId, '');
+        continue;
+      }
+
+      const buffer = await response.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+
+      if (!firstSheetName) {
+        result.set(entryId, '');
+        continue;
+      }
+
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
+        defval: '',
+      });
+
+      if (!rows.length) {
+        result.set(entryId, '');
+        continue;
+      }
+
+      const people = rows
+        .map((row) => {
+          const firstName = getRowValue(row, ['FirstName', 'First Name']);
+          const lastName = getRowValue(row, ['LastName', 'Last Name']);
+          const url = getRowValue(row, ['URL', 'Url']);
+
+          return {
+            firstName,
+            lastName,
+            url,
+            fullName: `${firstName} ${lastName}`.trim(),
+          };
+        })
+        .filter((person) => person.fullName.length > 0)
+        .sort((a, b) => a.lastName.localeCompare(b.lastName, undefined, { sensitivity: 'base' }));
+
+      if (!people.length) {
+        result.set(entryId, '');
+        continue;
+      }
+
+      const listItems = people
+        .map((person) => {
+          const escapedName = escapeHtml(person.fullName);
+          if (person.url) {
+            return `<li><a href="${escapeHtml(person.url)}" target="_blank" rel="noopener noreferrer">${escapedName}</a></li>`;
+          }
+          return `<li>${escapedName}</li>`;
+        })
+        .join('');
+
+      const listClassName = `spreadsheet-list-${entryId}`;
+
+      result.set(
+        entryId,
+        `<style>
+          .${listClassName} {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.25rem 1.5rem;
+            list-style: disc;
+            padding-left: 1.5rem;
+            margin: 0;
+          }
+          @media (min-width: 768px) {
+            .${listClassName} {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+          }
+          @media (min-width: 1024px) {
+            .${listClassName} {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+          }
+        </style>
+        <ul class="${listClassName}">${listItems}</ul>`
+      );
+    } catch {
+      result.set(entryId, '');
+    }
+  }
+
+  return result;
+}
+
 // Create render options based on document structure
-export function createRenderOptions(doc: Document) {
+export async function createRenderOptions(doc: Document) {
   const embeddedAssets = findEmbeddedAssets(doc);
   const totalAssets = embeddedAssets.length;
   let assetIndex = 0;
   let h3Count = 0;
+  const spreadsheetMarkupByEntryId = await buildSpreadsheetMarkupByEntryId(doc);
 
   const renderH3 = (content: string, extraStyles: string = '') => {
     const marginTopStyle = h3Count === 0 ? '' : 'margin-top:0.5rem;';
@@ -416,6 +579,10 @@ export function createRenderOptions(doc: Document) {
         
         if (!entry || !entry.fields) {
           return "";
+        }
+
+        if (entry.sys.contentType.sys.id === 'spreadSheetToList') {
+          return spreadsheetMarkupByEntryId.get(entry.sys.id) ?? '';
         }
         
         // Handle embedded videos

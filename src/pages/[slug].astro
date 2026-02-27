@@ -21,7 +21,9 @@ if (!page) {
   return Astro.redirect('/404');
 }
 
-console.log(page);
+const pageRenderOptions = page.fields.pageContent
+  ? await createRenderOptions(page.fields.pageContent)
+  : undefined;
 
 // Generate static paths for all navbar pages
 export async function getStaticPaths() {
@@ -54,7 +56,7 @@ export async function getStaticPaths() {
 		<h1>{page.fields.pageTitle}</h1>
     
     {page.fields.pageContent && (
-      <div set:html={documentToHtmlString(page.fields.pageContent, createRenderOptions(page.fields.pageContent))} />
+      <div set:html={documentToHtmlString(page.fields.pageContent, pageRenderOptions)} />
     )}
 	</main>
 	</div>

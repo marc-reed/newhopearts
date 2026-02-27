@@ -27,6 +27,7 @@ const entries = await contentfulClient.getEntries<BlogPost>({
   "fields.slug": blog,
 });
 const post: any = entries.items[0];
+const postRenderOptions = await createRenderOptions(post.fields.content);
 
 export async function getStaticPaths() {
   const entries = await contentfulClient.getEntries<BlogPost>({
@@ -44,7 +45,7 @@ export async function getStaticPaths() {
       <div class="container mx-auto mt-4 px-4 sm:px-6 lg:px-8">
         <main>
           <h1>{post.fields.title}</h1>
-        <div set:html={documentToHtmlString(post.fields.content, createRenderOptions(post.fields.content))} />
+        <div set:html={documentToHtmlString(post.fields.content, postRenderOptions)} />
         </main>
       </div>
     </Layout>
