@@ -38,16 +38,16 @@ navbarPages.items.forEach((item: any) => {
               
               if (hasChildren) {
                 return (
-                  <div class="relative group">
+                  <div class="relative group desktop-dropdown">
                     <button 
-                      class="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 text-white hover:bg-white/10 flex items-center gap-1"
+                      class="desktop-dropdown-toggle px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 text-white hover:bg-white/10 flex items-center gap-1"
                     >
                       {item.fields.navbarLinkText}
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                    <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div class="desktop-dropdown-content absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50">
                       {item.fields.childPages.map((childPage: any) => {
                         const childHref = childPage.fields.externalLinkUrl || `/${childPage.fields.slug}`;
                         const childTarget = childPage.fields.externalLinkUrl ? '_blank' : undefined;
@@ -212,5 +212,54 @@ navbarPages.items.forEach((item: any) => {
         });
       }
     });
+
+    // Desktop dropdown support for touch devices (e.g., iPad)
+    const desktopDropdowns = document.querySelectorAll('.desktop-dropdown');
+    const isTouchLikeDevice = window.matchMedia('(hover: none)').matches;
+
+    if (isTouchLikeDevice) {
+      desktopDropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector('.desktop-dropdown-toggle');
+        const content = dropdown.querySelector('.desktop-dropdown-content');
+
+        if (toggle && content) {
+          toggle.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            desktopDropdowns.forEach(otherDropdown => {
+              if (otherDropdown !== dropdown) {
+                const otherContent = otherDropdown.querySelector('.desktop-dropdown-content');
+                if (otherContent) {
+                  otherContent.classList.remove('opacity-100', 'visible');
+                  otherContent.classList.add('opacity-0', 'invisible');
+                }
+              }
+            });
+
+            const isOpen = content.classList.contains('visible');
+            if (isOpen) {
+              content.classList.remove('opacity-100', 'visible');
+              content.classList.add('opacity-0', 'invisible');
+            } else {
+              content.classList.remove('opacity-0', 'invisible');
+              content.classList.add('opacity-100', 'visible');
+            }
+          });
+        }
+      });
+
+      document.addEventListener('click', function(event) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.desktop-dropdown')) {
+          desktopDropdowns.forEach(dropdown => {
+            const content = dropdown.querySelector('.desktop-dropdown-content');
+            if (content) {
+              content.classList.remove('opacity-100', 'visible');
+              content.classList.add('opacity-0', 'invisible');
+            }
+          });
+        }
+      });
+    }
   });
 </script>
