@@ -1,9 +1,10 @@
 ---
 import { contentfulClient } from "../../lib/contentful";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
-import { createRenderOptions } from "../../lib/contentful-renderer";
+import { createRenderOptions, createSidebarMarkup } from "../../lib/contentful-renderer";
 import type { Asset } from "contentful";
 import type { EntryFieldTypes } from "contentful";
+import type { EntrySkeletonType } from "contentful";
 import type { Document } from "@contentful/rich-text-types";
 import Layout from '../../layouts/Layout.astro';
 
@@ -27,7 +28,29 @@ const entries = await contentfulClient.getEntries<BlogPost>({
   "fields.slug": blog,
 });
 const post: any = entries.items[0];
-const postRenderOptions = await createRenderOptions(post.fields.content);
+
+const navbarEntries = await contentfulClient.getEntries<EntrySkeletonType>({
+  content_type: 'navbarPages',
+});
+
+const entryHrefById: Record<string, string> = {};
+const mapEntryHref = (entry: any) => {
+  if (!entry?.sys?.id || !entry?.fields) return;
+  const href = entry.fields.externalLinkUrl || (entry.fields.slug ? `/${entry.fields.slug}` : undefined);
+  if (href) {
+    entryHrefById[entry.sys.id] = href;
+  }
+};
+
+navbarEntries.items.forEach((entry: any) => {
+  mapEntryHref(entry);
+  if (Array.isArray(entry.fields?.childPages)) {
+    entry.fields.childPages.forEach((child: any) => mapEntryHref(child));
+  }
+});
+
+const postRenderOptions = await createRenderOptions(post.fields.content, entryHrefById);
+const postSidebarMarkup = await createSidebarMarkup(post.fields.content, entryHrefById);
 
 export async function getStaticPaths() {
   const entries = await contentfulClient.getEntries<BlogPost>({
@@ -45,7 +68,34 @@ export async function getStaticPaths() {
       <div class="container mx-auto mt-4 px-4 sm:px-6 lg:px-8">
         <main>
           <h1>{post.fields.title}</h1>
-        <div set:html={documentToHtmlString(post.fields.content, postRenderOptions)} />
+        <div class={postSidebarMarkup ? 'nha-page-content-layout' : undefined}>
+          <div set:html={documentToHtmlString(post.fields.content, postRenderOptions)} />
+          {postSidebarMarkup && <aside class="nha-sidebar-column" set:html={postSidebarMarkup} />}
+        </div>
         </main>
       </div>
     </Layout>
+
+<style>
+  .nha-page-content-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .nha-sidebar-column :global(.nha-sidebar-card) {
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: #f8fafc;
+    margin-bottom: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .nha-page-content-layout {
+      grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+      align-items: start;
+      gap: 1.5rem;
+    }
+  }
+</style>

@@ -1,6 +1,9 @@
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
 import type { Document } from "@contentful/rich-text-types";
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import * as XLSX from "xlsx";
+
+type EntryHrefMap = Record<string, string>;
 
 function getScaledDimensions(width: number, height: number, max: number = 400) {
   if (width <= max && height <= max) return { width, height };
@@ -66,6 +69,113 @@ function findSpreadsheetToListEntries(doc: Document): any[] {
   return entries;
 }
 
+function findSideBarEntries(doc: Document): any[] {
+  const entries: any[] = [];
+
+  function traverse(node: any) {
+    if (
+      (node.nodeType === 'embedded-entry-inline' || node.nodeType === BLOCKS.EMBEDDED_ENTRY) &&
+      ['sideBar', 'sidebar'].includes(node.data?.target?.sys?.contentType?.sys?.id)
+    ) {
+      entries.push(node.data.target);
+    }
+    if (node.content && Array.isArray(node.content)) {
+      node.content.forEach((child: any) => traverse(child));
+    }
+  }
+
+  traverse(doc);
+  return entries;
+}
+
+function getSideBarContentHtml(entry: any, entryHrefById: EntryHrefMap = {}): string {
+  const sidebarRenderOptions = {
+    ...renderOptions,
+    renderNode: {
+      ...renderOptions.renderNode,
+      [INLINES.ENTRY_HYPERLINK]: (node: any, next: any) => {
+        const sidebarEntry = node.data.target;
+        const linkText = next ? next(node.content) :
+          node.content.map((content: any) => content.value || '').join('');
+        const url = resolveEntryHref(sidebarEntry, entryHrefById);
+
+        return `<a href="${url}">${linkText}</a>`;
+      },
+    },
+  };
+
+  const sidebarDoc = entry?.fields?.pageContent || entry?.fields?.content || entry?.fields?.sidebarContent;
+
+  if (sidebarDoc?.nodeType === 'document') {
+    return documentToHtmlString(sidebarDoc, sidebarRenderOptions as any);
+  }
+
+  if (entry?.fields && typeof entry.fields === 'object') {
+    const documentField = Object.values(entry.fields).find(
+      (value: any) => value?.nodeType === 'document'
+    ) as any;
+
+    if (documentField?.nodeType === 'document') {
+      return documentToHtmlString(documentField, sidebarRenderOptions as any);
+    }
+  }
+
+  if (typeof entry?.fields?.content === 'string') {
+    return `<p>${escapeHtml(entry.fields.content)}</p>`;
+  }
+
+  if (typeof entry?.fields?.description === 'string') {
+    return `<p>${escapeHtml(entry.fields.description)}</p>`;
+  }
+
+  if (entry?.fields && typeof entry.fields === 'object') {
+    const stringField = Object.values(entry.fields).find(
+      (value: any) => typeof value === 'string' && value.trim().length > 0
+    ) as string | undefined;
+
+    if (stringField) {
+      return `<p>${escapeHtml(stringField)}</p>`;
+    }
+  }
+
+  return '';
+}
+
+async function buildSideBarMarkupByEntryId(doc: Document, entryHrefById: EntryHrefMap = {}): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  const entries = findSideBarEntries(doc);
+
+  for (const entry of entries) {
+    const entryId = entry?.sys?.id;
+    if (!entryId || result.has(entryId)) {
+      continue;
+    }
+
+    const sidebarBody = getSideBarContentHtml(entry, entryHrefById);
+    if (!sidebarBody) {
+      result.set(entryId, '');
+      continue;
+    }
+
+    result.set(entryId, sidebarBody);
+  }
+
+  return result;
+}
+
+export async function createSidebarMarkup(doc: Document, entryHrefById: EntryHrefMap = {}): Promise<string> {
+  const sidebars = await buildSideBarMarkupByEntryId(doc, entryHrefById);
+  const sidebarBodies = Array.from(sidebars.values()).filter(Boolean);
+
+  if (!sidebarBodies.length) {
+    return '';
+  }
+
+  return sidebarBodies
+    .map((sidebarBody) => `<section class="nha-sidebar-card">${sidebarBody}</section>`)
+    .join('');
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -73,6 +183,36 @@ function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function resolveEntryHref(entry: any, entryHrefById: EntryHrefMap = {}): string {
+  if (!entry || !entry.fields) {
+    const entryId = entry?.sys?.id;
+    if (entryId && entryHrefById[entryId]) {
+      return entryHrefById[entryId];
+    }
+    return '#';
+  }
+
+  const entryId = entry?.sys?.id;
+  if (entryId && entryHrefById[entryId]) {
+    return entryHrefById[entryId];
+  }
+
+  if (entry.fields.externalLinkUrl) {
+    return String(entry.fields.externalLinkUrl);
+  }
+
+  const slug = entry.fields.slug ? String(entry.fields.slug) : '';
+  if (!slug) {
+    return '#';
+  }
+
+  if (entry.sys?.contentType?.sys?.id === 'blog') {
+    return `/blog/${slug}`;
+  }
+
+  return slug.startsWith('/') ? slug : `/${slug}`;
 }
 
 function normalizeKey(value: string): string {
@@ -209,12 +349,17 @@ async function buildSpreadsheetMarkupByEntryId(doc: Document): Promise<Map<strin
 }
 
 // Create render options based on document structure
-export async function createRenderOptions(doc: Document) {
+export async function createRenderOptions(doc: Document, entryHrefById: EntryHrefMap = {}) {
   const embeddedAssets = findEmbeddedAssets(doc);
   const totalAssets = embeddedAssets.length;
   let assetIndex = 0;
   let h3Count = 0;
   const spreadsheetMarkupByEntryId = await buildSpreadsheetMarkupByEntryId(doc);
+  const sideBarEntryIds = new Set(
+    findSideBarEntries(doc)
+      .map((entry: any) => entry?.sys?.id)
+      .filter(Boolean)
+  );
 
   const renderH3 = (content: string, extraStyles: string = '') => {
     const marginTopStyle = h3Count === 0 ? '' : 'margin-top:0.5rem;';
@@ -337,6 +482,10 @@ export async function createRenderOptions(doc: Document) {
         
         const contentTypeId = entry.sys.contentType.sys.id;
         console.log(`[BLOCKS.EMBEDDED_ENTRY] Processing contentType: ${contentTypeId}`);
+
+        if ((contentTypeId === 'sideBar' || contentTypeId === 'sidebar') && sideBarEntryIds.has(entry.sys.id)) {
+          return '';
+        }
         
         // Handle imageGrid - responsive grid of thumbnail images with lightbox  [BLOCKS_HANDLER]
         if (contentTypeId === 'imageGrid' && entry.fields.image) {
@@ -547,13 +696,7 @@ export async function createRenderOptions(doc: Document) {
         const entry = node.data.target;
         const linkText = next ? next(node.content) : 
                         node.content.map((content: any) => content.value || '').join('');
-        
-        let url = '#';
-        if (entry && entry.fields) {
-          if (entry.sys.contentType.sys.id === 'blog' && entry.fields.slug) {
-            url = `/blog/${entry.fields.slug}`;
-          }
-        }
+        const url = resolveEntryHref(entry, entryHrefById);
         
         return `<a href="${url}">${linkText}</a>`;
       },
@@ -583,6 +726,13 @@ export async function createRenderOptions(doc: Document) {
 
         if (entry.sys.contentType.sys.id === 'spreadSheetToList') {
           return spreadsheetMarkupByEntryId.get(entry.sys.id) ?? '';
+        }
+
+        if (
+          (entry.sys.contentType.sys.id === 'sideBar' || entry.sys.contentType.sys.id === 'sidebar') &&
+          sideBarEntryIds.has(entry.sys.id)
+        ) {
+          return '';
         }
         
         // Handle embedded videos
@@ -880,13 +1030,7 @@ export const renderOptions = {
       const entry = node.data.target;
       const linkText = next ? next(node.content) : 
                       node.content.map((content: any) => content.value || '').join('');
-      
-      let url = '#';
-      if (entry && entry.fields) {
-        if (entry.sys.contentType.sys.id === 'blog' && entry.fields.slug) {
-          url = `/blog/${entry.fields.slug}`;
-        }
-      }
+      const url = resolveEntryHref(entry);
       
       return `<a href="${url}">${linkText}</a>`;
     },
@@ -970,13 +1114,7 @@ export const cardRenderOptions = {
       const entry = node.data.target;
       const linkText = next ? next(node.content) : 
                       node.content.map((content: any) => content.value || '').join('');
-      
-      let url = '#';
-      if (entry && entry.fields) {
-        if (entry.sys.contentType.sys.id === 'blog' && entry.fields.slug) {
-          url = `/blog/${entry.fields.slug}`;
-        }
-      }
+      const url = resolveEntryHref(entry);
       
       return `<a href="${url}">${linkText}</a>`;
     },
