@@ -7,4 +7,6 @@
 
 # Environment variables are set in Netlify UI, not here
 # Go to: Site settings > Environment variables
-# Add: CONTENTFUL_SPACE_ID, CONTENTFUL_DELIVERY_TOKEN
+# Add: CONTENTFUL_SPACE_ID, CONTENTFUL_DELIVERY_TOKEN, CAPTCHA_SITE_KEY, CAPTCHA_SECRET_KEY, SMTP2GO_API_KEY
+# Optional: SMTP2GO_SENDER (default no-reply@newhopearts.org)
+# Optional: CAPTCHA_MIN_SCORE (default 0.5)

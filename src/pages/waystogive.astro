@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { contentfulClient } from '../lib/contentful';
+import MailForm from '../components/MailForm.astro';
 
 const printMailGiftFormAsset = await contentfulClient.getAsset('3yHXFZtsdjG935hgW52xjt');
 const printMailGiftFormUrl = printMailGiftFormAsset?.fields?.file?.url
@@ -10,6 +11,7 @@ const giftsOfSecuritiesFormAsset = await contentfulClient.getAsset('1MOCwgTrAYWZ
 const giftsOfSecuritiesFormUrl = giftsOfSecuritiesFormAsset?.fields?.file?.url
   ? `https:${giftsOfSecuritiesFormAsset.fields.file.url}`
   : '#';
+const captchaSiteKey = import.meta.env.CAPTCHA_SITE_KEY;
 ---
 
 <Layout>
@@ -72,7 +74,8 @@ const giftsOfSecuritiesFormUrl = giftsOfSecuritiesFormAsset?.fields?.file?.url
         <p class="mb-2">Other ways to consider giving are Corporate Matching Gift Programs, Charitable IRA Rollovers, Donor Advised Funds, and Bequests. If you have questions or need further information call us at (267) 740-2653.</p>
 
         <p class="mb-2"><strong>Questions?</strong> Please email us at <a href="mailto:development@newhopearts.org">development@newhopearts.org</a> or call us at <strong>(267) 740-2653</strong>.</p>
-        
+        <h3 class="mt-8">Contact Form</h3>
+        <MailForm subject="Ways to Give Contact Form Submission" formType="waystogive" />
 
 
       </div>
