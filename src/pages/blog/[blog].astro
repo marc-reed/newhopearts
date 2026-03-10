@@ -1,12 +1,13 @@
 ---
 import { contentfulClient } from "../../lib/contentful";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
-import { createRenderOptions, createSidebarMarkup } from "../../lib/contentful-renderer";
+import { createRenderOptions, createSidebarMarkup, getContactFormEmbeds, splitRichTextByContactFormPlaceholders } from "../../lib/contentful-renderer";
 import type { Asset } from "contentful";
 import type { EntryFieldTypes } from "contentful";
 import type { EntrySkeletonType } from "contentful";
 import type { Document } from "@contentful/rich-text-types";
 import Layout from '../../layouts/Layout.astro';
+import MailForm from '../../components/MailForm.astro';
 
 const { blog } = Astro.params;
 
@@ -51,6 +52,9 @@ navbarEntries.items.forEach((entry: any) => {
 
 const postRenderOptions = await createRenderOptions(post.fields.content, entryHrefById);
 const postSidebarMarkup = await createSidebarMarkup(post.fields.content, entryHrefById);
+const postContentHtml = documentToHtmlString(post.fields.content, postRenderOptions);
+const contactFormEmbeds = getContactFormEmbeds(post.fields.content);
+const postContentFragments = splitRichTextByContactFormPlaceholders(postContentHtml);
 
 export async function getStaticPaths() {
   const entries = await contentfulClient.getEntries<BlogPost>({
@@ -69,7 +73,19 @@ export async function getStaticPaths() {
         <main>
           <h1>{post.fields.title}</h1>
         <div class={postSidebarMarkup ? 'nha-page-content-layout' : undefined}>
-          <div set:html={documentToHtmlString(post.fields.content, postRenderOptions)} />
+          <div>
+            {postContentFragments.map((fragment) => {
+              const embed = fragment.contactFormEntryId
+                ? contactFormEmbeds.get(fragment.contactFormEntryId)
+                : undefined;
+
+              if (embed) {
+                return <MailForm subject={embed.subject} formType={embed.formType} />;
+              }
+
+              return fragment.html ? <Fragment set:html={fragment.html} /> : null;
+            })}
+          </div>
           {postSidebarMarkup && <aside class="nha-sidebar-column" set:html={postSidebarMarkup} />}
         </div>
         </main>

@@ -1,8 +1,9 @@
 ---
 import { contentfulClient } from "../lib/contentful";
-import { createRenderOptions, createSidebarMarkup } from "../lib/contentful-renderer";
+import { createRenderOptions, createSidebarMarkup, getContactFormEmbeds, splitRichTextByContactFormPlaceholders } from "../lib/contentful-renderer";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import Layout from '../layouts/Layout.astro';
+import MailForm from '../components/MailForm.astro';
 import type { EntrySkeletonType } from "contentful";
 
 const { slug } = Astro.params;
@@ -47,6 +48,13 @@ const pageRenderOptions = page.fields.pageContent
 const sidebarMarkup = page.fields.pageContent
   ? await createSidebarMarkup(page.fields.pageContent, entryHrefById)
   : '';
+const pageContentHtml = page.fields.pageContent
+  ? documentToHtmlString(page.fields.pageContent, pageRenderOptions)
+  : '';
+const contactFormEmbeds = page.fields.pageContent
+  ? getContactFormEmbeds(page.fields.pageContent)
+  : new Map();
+const pageContentFragments = splitRichTextByContactFormPlaceholders(pageContentHtml);
 
 // Generate static paths for all navbar pages
 export async function getStaticPaths() {
@@ -80,7 +88,19 @@ export async function getStaticPaths() {
     
     {page.fields.pageContent && (
       <div class={sidebarMarkup ? 'nha-page-content-layout' : undefined}>
-        <div set:html={documentToHtmlString(page.fields.pageContent, pageRenderOptions)} />
+        <div>
+          {pageContentFragments.map((fragment) => {
+            const embed = fragment.contactFormEntryId
+              ? contactFormEmbeds.get(fragment.contactFormEntryId)
+              : undefined;
+
+            if (embed) {
+              return <MailForm subject={embed.subject} formType={embed.formType} />;
+            }
+
+            return fragment.html ? <Fragment set:html={fragment.html} /> : null;
+          })}
+        </div>
         {sidebarMarkup && <aside class="nha-sidebar-column" set:html={sidebarMarkup} />}
       </div>
     )}

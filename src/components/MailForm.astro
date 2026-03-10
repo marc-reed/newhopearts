@@ -175,7 +175,7 @@ const fieldIdPrefix = `mail-${formType || 'form'}`.replace(/[^a-z0-9-]/gi, '-').
         submitButton.setAttribute('aria-busy', 'true');
       }
 
-      if (submitSpinner instanceof HTMLElement) {
+      if (submitSpinner instanceof Element) {
         submitSpinner.classList.remove('hidden');
       }
 
@@ -225,7 +225,7 @@ const fieldIdPrefix = `mail-${formType || 'form'}`.replace(/[^a-z0-9-]/gi, '-').
           submitButton.setAttribute('aria-busy', 'false');
         }
 
-        if (submitSpinner instanceof HTMLElement) {
+        if (submitSpinner instanceof Element) {
           submitSpinner.classList.add('hidden');
         }
 

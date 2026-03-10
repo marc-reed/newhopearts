@@ -5,6 +5,20 @@ import * as XLSX from "xlsx";
 
 type EntryHrefMap = Record<string, string>;
 
+export interface ContactFormEmbed {
+  entryId: string;
+  subject: string;
+  formType: string;
+}
+
+interface RichTextFragment {
+  html: string;
+  contactFormEntryId?: string;
+}
+
+const CONTACT_FORM_PLACEHOLDER_PREFIX = '<!--CONTACT_FORM:';
+const CONTACT_FORM_PLACEHOLDER_REGEX = /<!--CONTACT_FORM:([^>]+)-->/g;
+
 function getScaledDimensions(width: number, height: number, max: number = 400) {
   if (width <= max && height <= max) return { width, height };
   const aspectRatio = width / height;
@@ -86,6 +100,81 @@ function findSideBarEntries(doc: Document): any[] {
 
   traverse(doc);
   return entries;
+}
+
+function findContactFormEntries(doc: Document): any[] {
+  const entries: any[] = [];
+
+  function traverse(node: any) {
+    if (
+      node.nodeType === 'embedded-entry-inline' &&
+      node.data?.target?.sys?.contentType?.sys?.id === 'contactForm'
+    ) {
+      entries.push(node.data.target);
+    }
+    if (node.content && Array.isArray(node.content)) {
+      node.content.forEach((child: any) => traverse(child));
+    }
+  }
+
+  traverse(doc);
+  return entries;
+}
+
+export function getContactFormEmbeds(doc: Document): Map<string, ContactFormEmbed> {
+  const embeds = new Map<string, ContactFormEmbed>();
+  const entries = findContactFormEntries(doc);
+
+  for (const entry of entries) {
+    const entryId = entry?.sys?.id;
+    if (!entryId || embeds.has(entryId)) {
+      continue;
+    }
+
+    embeds.set(entryId, {
+      entryId,
+      subject: String(entry?.fields?.formSubject ?? ''),
+      formType: String(entry?.fields?.formType ?? ''),
+    });
+  }
+
+  return embeds;
+}
+
+export function splitRichTextByContactFormPlaceholders(html: string): RichTextFragment[] {
+  const fragments: RichTextFragment[] = [];
+  let cursor = 0;
+
+  for (const match of html.matchAll(CONTACT_FORM_PLACEHOLDER_REGEX)) {
+    const fullMatch = match[0];
+    const entryId = match[1];
+    const startIndex = match.index ?? -1;
+
+    if (startIndex < 0) {
+      continue;
+    }
+
+    if (startIndex > cursor) {
+      fragments.push({ html: html.slice(cursor, startIndex) });
+    }
+
+    fragments.push({ html: '', contactFormEntryId: entryId });
+    cursor = startIndex + fullMatch.length;
+  }
+
+  if (cursor < html.length) {
+    fragments.push({ html: html.slice(cursor) });
+  }
+
+  if (!fragments.length) {
+    return [{ html }];
+  }
+
+  return fragments;
+}
+
+function createContactFormPlaceholder(entryId: string): string {
+  return `${CONTACT_FORM_PLACEHOLDER_PREFIX}${entryId}-->`;
 }
 
 function getSideBarContentHtml(entry: any, entryHrefById: EntryHrefMap = {}): string {
@@ -726,6 +815,10 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
 
         if (entry.sys.contentType.sys.id === 'spreadSheetToList') {
           return spreadsheetMarkupByEntryId.get(entry.sys.id) ?? '';
+        }
+
+        if (entry.sys.contentType.sys.id === 'contactForm') {
+          return createContactFormPlaceholder(entry.sys.id);
         }
 
         if (
