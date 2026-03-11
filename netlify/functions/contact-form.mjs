@@ -142,7 +142,7 @@ export const handler = async (event) => {
   const replyToValue = isValidEmail(email) ? email : sender;
 
   const htmlBody = `
-    <h2>New Ways to Give contact form submission</h2>
+    <h2>${subject} form submission</h2>
     <p><strong>Name:</strong> ${safeName}</p>
     <p><strong>Email:</strong> ${safeEmail}</p>
     <p><strong>Phone:</strong> ${safePhone}</p>
