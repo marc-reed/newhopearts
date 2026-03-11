@@ -119,9 +119,9 @@ export const handler = async (event) => {
     'marc@marcreed.com';
 
   const sender = process.env.SMTP2GO_SENDER_EMAIL || 'no-reply@newhopearts.org';
-  const subject = rawSubject || 'Ways to Give Contact Form Submission';
+  const subject = rawSubject || 'Contact Form';
   const textBody = [
-    'New Ways to Give contact form submission',
+    `${subject}`,
     '',
     `Name: ${name}`,
     `Email: ${email}`,
