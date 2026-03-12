@@ -1,0 +1,21 @@
+---
+import Layout from '../layouts/Layout.astro';
+import JoinMailingListForm from '../components/JoinMailingList.astro';
+
+const defaultListId =
+  import.meta.env.CONSTANT_CONTACT_LIST_ID ||
+  'bf415050-de1e-11e2-9011-d4ae52733d3a';
+---
+
+<Layout title="Join Mailing List | New Hope Arts">
+  <div class="container mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-4xl font-bold mb-6">Join Our Mailing List</h1>
+    <div class="prose max-w-none">
+      <p class="mb-4">
+        Stay up to date on New Hope Arts performances, events, and announcements.
+        Complete the form below to subscribe to our mailing list.
+      </p>
+      <JoinMailingListForm listId={defaultListId} />
+    </div>
+  </div>
+</Layout>

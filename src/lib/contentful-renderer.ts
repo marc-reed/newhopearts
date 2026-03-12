@@ -11,13 +11,32 @@ export interface ContactFormEmbed {
   formType: string;
 }
 
+export interface ConstantContactEmbed {
+  entryId: string;
+  listId: string;
+}
+
 interface RichTextFragment {
   html: string;
   contactFormEntryId?: string;
+  constantContactEntryId?: string;
 }
 
 const CONTACT_FORM_PLACEHOLDER_PREFIX = '<!--CONTACT_FORM:';
-const CONTACT_FORM_PLACEHOLDER_REGEX = /<!--CONTACT_FORM:([^>]+)-->/g;
+const CONSTANT_CONTACT_PLACEHOLDER_PREFIX = '<!--CONSTANT_CONTACT:';
+const EMBED_PLACEHOLDER_REGEX = /<!--CONTACT_FORM:([^>]+)-->|<!--CONSTANT_CONTACT:([^>]+)-->/g;
+
+const CONSTANT_CONTACT_CONTENT_TYPE_IDS = new Set([
+  'constantContact',
+  'constantContactInline',
+  'constantContactForm',
+  'constantContactSignup'
+]);
+
+function isConstantContactEntry(entry: any): boolean {
+  const contentTypeId = entry?.sys?.contentType?.sys?.id;
+  return typeof contentTypeId === 'string' && CONSTANT_CONTACT_CONTENT_TYPE_IDS.has(contentTypeId);
+}
 
 function getScaledDimensions(width: number, height: number, max: number = 400) {
   if (width <= max && height <= max) return { width, height };
@@ -121,6 +140,22 @@ function findContactFormEntries(doc: Document): any[] {
   return entries;
 }
 
+function findConstantContactEntries(doc: Document): any[] {
+  const entries: any[] = [];
+
+  function traverse(node: any) {
+    if (node.nodeType === 'embedded-entry-inline' && isConstantContactEntry(node.data?.target)) {
+      entries.push(node.data.target);
+    }
+    if (node.content && Array.isArray(node.content)) {
+      node.content.forEach((child: any) => traverse(child));
+    }
+  }
+
+  traverse(doc);
+  return entries;
+}
+
 export function getContactFormEmbeds(doc: Document): Map<string, ContactFormEmbed> {
   const embeds = new Map<string, ContactFormEmbed>();
   const entries = findContactFormEntries(doc);
@@ -141,13 +176,38 @@ export function getContactFormEmbeds(doc: Document): Map<string, ContactFormEmbe
   return embeds;
 }
 
+export function getConstantContactEmbeds(doc: Document): Map<string, ConstantContactEmbed> {
+  const embeds = new Map<string, ConstantContactEmbed>();
+  const entries = findConstantContactEntries(doc);
+
+  for (const entry of entries) {
+    const entryId = entry?.sys?.id;
+    if (!entryId || embeds.has(entryId)) {
+      continue;
+    }
+
+    const listId = String(entry?.fields?.listId ?? entry?.fields?.constantContactListId ?? '').trim();
+    if (!listId) {
+      continue;
+    }
+
+    embeds.set(entryId, {
+      entryId,
+      listId
+    });
+  }
+
+  return embeds;
+}
+
 export function splitRichTextByContactFormPlaceholders(html: string): RichTextFragment[] {
   const fragments: RichTextFragment[] = [];
   let cursor = 0;
 
-  for (const match of html.matchAll(CONTACT_FORM_PLACEHOLDER_REGEX)) {
+  for (const match of html.matchAll(EMBED_PLACEHOLDER_REGEX)) {
     const fullMatch = match[0];
-    const entryId = match[1];
+    const contactFormEntryId = match[1];
+    const constantContactEntryId = match[2];
     const startIndex = match.index ?? -1;
 
     if (startIndex < 0) {
@@ -158,7 +218,7 @@ export function splitRichTextByContactFormPlaceholders(html: string): RichTextFr
       fragments.push({ html: html.slice(cursor, startIndex) });
     }
 
-    fragments.push({ html: '', contactFormEntryId: entryId });
+    fragments.push({ html: '', contactFormEntryId, constantContactEntryId });
     cursor = startIndex + fullMatch.length;
   }
 
@@ -175,6 +235,10 @@ export function splitRichTextByContactFormPlaceholders(html: string): RichTextFr
 
 function createContactFormPlaceholder(entryId: string): string {
   return `${CONTACT_FORM_PLACEHOLDER_PREFIX}${entryId}-->`;
+}
+
+function createConstantContactPlaceholder(entryId: string): string {
+  return `${CONSTANT_CONTACT_PLACEHOLDER_PREFIX}${entryId}-->`;
 }
 
 function getSideBarContentHtml(entry: any, entryHrefById: EntryHrefMap = {}): string {
@@ -819,6 +883,10 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
 
         if (entry.sys.contentType.sys.id === 'contactForm') {
           return createContactFormPlaceholder(entry.sys.id);
+        }
+
+        if (isConstantContactEntry(entry)) {
+          return createConstantContactPlaceholder(entry.sys.id);
         }
 
         if (

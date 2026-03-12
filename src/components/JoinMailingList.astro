@@ -1,0 +1,224 @@
+---
+interface Props {
+  listId: string;
+}
+
+const { listId } = Astro.props;
+const captchaSiteKey = import.meta.env.CAPTCHA_SITE_KEY;
+const safeListId = typeof listId === 'string' ? listId.trim() : '';
+const fieldIdPrefix = `join-mail-${safeListId || 'list'}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+---
+
+<div class="not-prose" data-join-mailing-list>
+  <form class="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4" data-join-mailing-list-form>
+    <div>
+      <label for={`${fieldIdPrefix}-first-name`} class="block text-sm font-medium mb-1">First Name *</label>
+      <input id={`${fieldIdPrefix}-first-name`} name="firstName" type="text" required class="w-full rounded-md border border-gray-400 px-3 py-2 hover:border-gray-500 focus:border-gray-700 focus:ring-2 focus:ring-gray-400/40 focus:outline-none" />
+    </div>
+
+    <div>
+      <label for={`${fieldIdPrefix}-last-name`} class="block text-sm font-medium mb-1">Last Name *</label>
+      <input id={`${fieldIdPrefix}-last-name`} name="lastName" type="text" required class="w-full rounded-md border border-gray-400 px-3 py-2 hover:border-gray-500 focus:border-gray-700 focus:ring-2 focus:ring-gray-400/40 focus:outline-none" />
+    </div>
+
+    <div class="md:col-span-2">
+      <label for={`${fieldIdPrefix}-email`} class="block text-sm font-medium mb-1">Email *</label>
+      <input id={`${fieldIdPrefix}-email`} name="email" type="email" required class="w-full rounded-md border border-gray-400 px-3 py-2 hover:border-gray-500 focus:border-gray-700 focus:ring-2 focus:ring-gray-400/40 focus:outline-none" />
+    </div>
+
+    <div class="md:col-span-2">
+      <input type="hidden" name="listId" value={safeListId} />
+      <input type="hidden" name="recaptchaToken" data-recaptcha-token />
+      {captchaSiteKey ? (
+        <p class="text-sm text-gray-600 m-0">This form is protected by reCAPTCHA v3.</p>
+      ) : (
+        <p class="text-sm text-red-600 m-0">reCAPTCHA is not configured.</p>
+      )}
+    </div>
+
+    <div class="md:col-span-2 flex items-center gap-3">
+      <button data-submit-button type="submit" class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-white" style="background: #242424;">
+        <svg data-submit-spinner class="hidden h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span data-submit-label>Subscribe</span>
+      </button>
+    </div>
+
+    <p data-status class="md:col-span-2 text-sm text-gray-600 m-0"></p>
+  </form>
+
+  <div data-modal class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby={`${fieldIdPrefix}-modal-title`}>
+    <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg">
+      <div data-modal-success-icon class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-8 w-8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      </div>
+      <div data-modal-error-icon class="mx-auto mb-4 hidden h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-8 w-8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </div>
+      <h4 id={`${fieldIdPrefix}-modal-title`} data-modal-title class="text-xl font-semibold text-center">Success</h4>
+      <p data-modal-message class="mt-2 text-center text-gray-700">You have been added to the mailing list.</p>
+      <div class="mt-6 flex justify-center">
+        <button data-modal-close type="button" class="rounded-md px-4 py-2 text-white" style="background: #242424;">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{captchaSiteKey && <script src={`https://www.google.com/recaptcha/api.js?render=${captchaSiteKey}`}></script>}
+<script is:inline define:vars={{ captchaSiteKey }}>
+  const mailingListRoots = document.querySelectorAll('[data-join-mailing-list]');
+
+  const initializeMailingListForm = (root) => {
+    if (!(root instanceof HTMLElement)) return;
+    if (root.dataset.initialized === 'true') return;
+
+    root.dataset.initialized = 'true';
+
+    const form = root.querySelector('[data-join-mailing-list-form]');
+    const tokenInput = root.querySelector('[data-recaptcha-token]');
+    const status = root.querySelector('[data-status]');
+    const submitButton = root.querySelector('[data-submit-button]');
+    const submitSpinner = root.querySelector('[data-submit-spinner]');
+    const submitLabel = root.querySelector('[data-submit-label]');
+    const modal = root.querySelector('[data-modal]');
+    const modalTitle = root.querySelector('[data-modal-title]');
+    const modalMessage = root.querySelector('[data-modal-message]');
+    const modalSuccessIcon = root.querySelector('[data-modal-success-icon]');
+    const modalErrorIcon = root.querySelector('[data-modal-error-icon]');
+    const modalCloseButton = root.querySelector('[data-modal-close]');
+
+    const setStatus = (message, isError = false) => {
+      if (!(status instanceof HTMLElement)) return;
+      status.textContent = message;
+      status.classList.toggle('text-red-600', isError);
+      status.classList.toggle('text-gray-600', !isError);
+    };
+
+    const showModal = ({ title, message, isError = false }) => {
+      if (!(modal instanceof HTMLElement)) return;
+      if (!(modalTitle instanceof HTMLElement)) return;
+      if (!(modalMessage instanceof HTMLElement)) return;
+      if (!(modalSuccessIcon instanceof HTMLElement)) return;
+      if (!(modalErrorIcon instanceof HTMLElement)) return;
+
+      modalTitle.textContent = title;
+      modalMessage.textContent = message;
+      modalSuccessIcon.classList.toggle('hidden', isError);
+      modalSuccessIcon.classList.toggle('flex', !isError);
+      modalErrorIcon.classList.toggle('hidden', !isError);
+      modalErrorIcon.classList.toggle('flex', isError);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    const hideModal = () => {
+      if (!(modal instanceof HTMLElement)) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    if (modalCloseButton instanceof HTMLElement) {
+      modalCloseButton.addEventListener('click', hideModal);
+    }
+
+    if (modal instanceof HTMLElement) {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          hideModal();
+        }
+      });
+    }
+
+    if (!(form instanceof HTMLFormElement)) return;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!captchaSiteKey) {
+        const message = 'reCAPTCHA site key is missing.';
+        setStatus(message, true);
+        showModal({ title: 'Submission Error', message, isError: true });
+        return;
+      }
+
+      if (!window.grecaptcha) {
+        const message = 'reCAPTCHA is still loading. Please try again.';
+        setStatus(message, true);
+        showModal({ title: 'Submission Error', message, isError: true });
+        return;
+      }
+
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = true;
+        submitButton.setAttribute('aria-busy', 'true');
+      }
+
+      if (submitSpinner instanceof Element) {
+        submitSpinner.classList.remove('hidden');
+      }
+
+      if (submitLabel instanceof HTMLElement) {
+        submitLabel.textContent = 'Submitting...';
+      }
+
+      setStatus('Verifying reCAPTCHA...');
+
+      try {
+        const token = await window.grecaptcha.execute(captchaSiteKey, { action: 'join_mailing_list_submit' });
+        if (tokenInput instanceof HTMLInputElement) {
+          tokenInput.value = token;
+        }
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+
+        const response = await fetch('/.netlify/functions/join-mailing-list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const responseBody = await response.json().catch(() => ({}));
+
+        if (!response.ok || !responseBody.ok) {
+          const message = responseBody.message || 'Unable to subscribe right now. Please try again.';
+          setStatus(message, true);
+          showModal({ title: 'Submission Error', message, isError: true });
+          return;
+        }
+
+        const successMessage = responseBody.message || 'You have been added to the mailing list.';
+        setStatus(successMessage);
+        showModal({ title: 'Success', message: successMessage });
+        form.reset();
+      } catch {
+        const message = 'Unable to subscribe right now. Please try again.';
+        setStatus(message, true);
+        showModal({ title: 'Submission Error', message, isError: true });
+      } finally {
+        if (submitButton instanceof HTMLButtonElement) {
+          submitButton.disabled = false;
+          submitButton.setAttribute('aria-busy', 'false');
+        }
+
+        if (submitSpinner instanceof Element) {
+          submitSpinner.classList.add('hidden');
+        }
+
+        if (submitLabel instanceof HTMLElement) {
+          submitLabel.textContent = 'Subscribe';
+        }
+      }
+    });
+  };
+
+  mailingListRoots.forEach(initializeMailingListForm);
+</script>

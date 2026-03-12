@@ -8,5 +8,7 @@
 # Environment variables are set in Netlify UI, not here
 # Go to: Site settings > Environment variables
 # Add: CONTENTFUL_SPACE_ID, CONTENTFUL_DELIVERY_TOKEN, CAPTCHA_SITE_KEY, CAPTCHA_SECRET_KEY, SMTP2GO_API_KEY
+# Add for mailing list: CC_CLIENT_ID, CC_CLIENT_SECRET, CC_REFRESH_TOKEN
+# Optional: CONSTANT_CONTACT_LIST_ID (used as default listId on standalone JoinMailingList page)
 # Optional: SMTP2GO_SENDER (default no-reply@newhopearts.org)
 # Optional: CAPTCHA_MIN_SCORE (default 0.5)

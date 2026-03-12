@@ -1,9 +1,10 @@
 ---
 import { contentfulClient } from "../lib/contentful";
-import { createRenderOptions, createSidebarMarkup, getContactFormEmbeds, splitRichTextByContactFormPlaceholders } from "../lib/contentful-renderer";
+import { createRenderOptions, createSidebarMarkup, getConstantContactEmbeds, getContactFormEmbeds, splitRichTextByContactFormPlaceholders } from "../lib/contentful-renderer";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import Layout from '../layouts/Layout.astro';
 import MailForm from '../components/MailForm.astro';
+import JoinMailingList from '../components/JoinMailingList.astro';
 import type { EntrySkeletonType } from "contentful";
 
 const { slug } = Astro.params;
@@ -54,6 +55,9 @@ const pageContentHtml = page.fields.pageContent
 const contactFormEmbeds = page.fields.pageContent
   ? getContactFormEmbeds(page.fields.pageContent)
   : new Map();
+const constantContactEmbeds = page.fields.pageContent
+  ? getConstantContactEmbeds(page.fields.pageContent)
+  : new Map();
 const pageContentFragments = splitRichTextByContactFormPlaceholders(pageContentHtml);
 
 // Generate static paths for all navbar pages
@@ -93,9 +97,16 @@ export async function getStaticPaths() {
             const embed = fragment.contactFormEntryId
               ? contactFormEmbeds.get(fragment.contactFormEntryId)
               : undefined;
+            const constantContactEmbed = fragment.constantContactEntryId
+              ? constantContactEmbeds.get(fragment.constantContactEntryId)
+              : undefined;
 
             if (embed) {
               return <MailForm subject={embed.subject} formType={embed.formType} />;
+            }
+
+            if (constantContactEmbed) {
+              return <JoinMailingList listId={constantContactEmbed.listId} />;
             }
 
             return fragment.html ? <Fragment set:html={fragment.html} /> : null;
