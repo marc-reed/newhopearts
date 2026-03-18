@@ -19,6 +19,10 @@ const cards = entries.items.filter(
     item.fields.featuredItem === true &&
     (item.fields.sortOrder === 2 || item.fields.sortOrder === 3)
 ).sort((a, b) => Number(a.fields.sortOrder ?? 0) - Number(b.fields.sortOrder ?? 0));
+
+const threeCards = entries.items.filter(
+  (item) => item.fields.sortOrder === 4 || item.fields.sortOrder === 5 || item.fields.sortOrder === 6
+).sort((a, b) => Number(a.fields.sortOrder ?? 0) - Number(b.fields.sortOrder ?? 0));
 ---
     <div class="w-full">
       {/* Hero Section with Background Image */}
@@ -97,6 +101,44 @@ const cards = entries.items.filter(
           ))}
         </div>
       </div>
+
+      {/* Three Cards Section */}
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {threeCards.map((card) => (
+            <div class="flex flex-col bg-white rounded-xl shadow-md overflow-hidden">
+              <a
+                href={card.fields.slug ? `/blog/${card.fields.slug}` : "#"}
+                class="block"
+              >
+                <div
+                  class="h-[120px] bg-cover bg-center"
+                  style={{ backgroundImage: (card.fields as any)?.image?.fields?.file?.url ? `url(https:${(card.fields as any).image.fields.file.url})` : undefined }}
+                ></div>
+              </a>
+
+              <div class="flex-1 p-6 flex flex-col">
+                <h4 class="text-xl font-bold text-slate-900 mb-3">
+                  {card.fields.title}
+                </h4>
+                <div class="text-slate-600 text-sm leading-relaxed mb-4 flex-1" set:html={marked.parse(String((card.fields as any)?.description ?? ''))}>
+                </div>
+                <a
+                  href={card.fields.slug ? `/blog/${card.fields.slug}` : "#"}
+                  class="inline-flex items-center gap-2 border-2 transition-all duration-300 hover:bg-slate-50 self-start px-3 py-1.5 rounded-lg font-medium text-sm"
+                  style="border-color: #E20000; color: #E20000;"
+                  onmouseenter="this.style.backgroundColor='#E20000';this.style.color='white';"
+                  onmouseleave="this.style.backgroundColor='transparent';this.style.color='#E20000';"
+                >
+                  <span>Read More</span>
+                  <ArrowRight className="w-4 h-4" style={{ verticalAlign: 'middle' }} />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div class="flex justify-center my-8">
         <a href="https://www.visitpa.com/" target="_blank" rel="noopener noreferrer"><img src="/logo_visitPA.png" alt="Visit PA Logo" width="300" height="138"/></a>
       </div>
