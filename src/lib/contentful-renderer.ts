@@ -668,7 +668,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                      onclick="openLightbox('${gridId}', ${index})"
                      onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.2)'" 
                      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 1px 3px 0 rgba(0,0,0,0.1)'">
-                  <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:200px;object-fit:contain;" />
+                  <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:150px;object-fit:contain;" />
                 </div>`;
             }
           });
@@ -680,7 +680,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
             <div id="lightbox-${gridId}" onclick="closeLightbox('${gridId}')" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);cursor:pointer;">
               <span onclick="closeLightbox('${gridId}')" style="position:absolute;top:20px;right:35px;color:#fff;font-size:40px;font-weight:bold;cursor:pointer;z-index:10000;">&times;</span>
               <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default;">
-                <img id="lightbox-image-${gridId}" src="" alt="" style="max-width:100vw;max-height:100vh;object-fit:contain;" />
+                <img id="lightbox-image-${gridId}" src="" alt="" style="max-width:100vw;max-height:calc(100vh - 50px);object-fit:contain;" />
                 <div id="lightbox-caption-${gridId}" style="color:#fff;padding:0.25rem 0.5rem;font-size:1.125rem;"></div>
               </div>
             </div>
@@ -960,7 +960,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                      onclick="openLightbox('${gridId}', ${index})"
                      onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.2)'" 
                      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 1px 3px 0 rgba(0,0,0,0.1)'">
-                  <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:200px;object-fit:contain;" />
+                    <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:150px;object-fit:contain;" />
                 </div>`;
             }
           });
@@ -972,10 +972,9 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
             <div id="lightbox-${gridId}" onclick="closeLightbox('${gridId}')" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);cursor:pointer;">
               <span onclick="closeLightbox('${gridId}')" style="position:absolute;top:20px;right:35px;color:#fff;font-size:40px;font-weight:bold;cursor:pointer;z-index:10000;">&times;</span>
               <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default;">
-                <img id="lightbox-image-${gridId}" src="" alt="" style="max-width:100vw;max-height:100vh;object-fit:contain;" />
+                <img id="lightbox-image-${gridId}" src="" alt="" style="max-width:100vw;max-height:calc(100vh - 50px);object-fit:contain;" />
                 <div id="lightbox-caption-${gridId}" style="color:#fff;padding:0.25rem 0.5rem;font-size:1.125rem;"></div>
               </div>
-            </div>
             
             <script>
               window.lightboxData = window.lightboxData || {};
