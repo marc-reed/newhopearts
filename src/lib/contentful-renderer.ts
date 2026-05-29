@@ -668,7 +668,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                      onclick="openLightbox('${gridId}', ${index})"
                      onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.2)'" 
                      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 1px 3px 0 rgba(0,0,0,0.1)'">
-                  <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:auto;display:block;" />
+                  <img src="${imageUrl}" alt="${imageTitle}" style="max-width:100%;height:auto;max-height:300px;display:block;" />
                 </div>`;
             }
           });
@@ -960,7 +960,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                      onclick="openLightbox('${gridId}', ${index})"
                      onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.2)'" 
                      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 1px 3px 0 rgba(0,0,0,0.1)'">
-                    <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:auto;display:block;" />
+                    <img src="${imageUrl}" alt="${imageTitle}" style="max-width:100%;height:auto;max-height:300px;display:block;" />
                 </div>`;
             }
           });
