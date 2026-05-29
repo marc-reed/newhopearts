@@ -659,7 +659,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
           
           images.forEach((image: any, index: number) => {
             if (image && image.fields && image.fields.file) {
-              const imageUrl = `https:${image.fields.file.url}?w=300&h=300&fit=scale`;
+              const imageUrl = `https:${image.fields.file.url}?w=600&fit=scale`;
               const imageTitle = image.fields.title || '';
               const description = image.fields.description || '';
               
@@ -668,7 +668,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                      onclick="openLightbox('${gridId}', ${index})"
                      onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.2)'" 
                      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 1px 3px 0 rgba(0,0,0,0.1)'">
-                  <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:150px;object-fit:contain;" />
+                  <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:auto;display:block;" />
                 </div>`;
             }
           });
@@ -951,7 +951,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
           
           images.forEach((image: any, index: number) => {
             if (image && image.fields && image.fields.file) {
-              const imageUrl = `https:${image.fields.file.url}?w=300&h=300`;
+              const imageUrl = `https:${image.fields.file.url}?w=600&fit=scale`;
               const imageTitle = image.fields.title || '';
               const description = image.fields.description || '';
               
@@ -960,7 +960,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                      onclick="openLightbox('${gridId}', ${index})"
                      onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.2)'" 
                      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 1px 3px 0 rgba(0,0,0,0.1)'">
-                    <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:150px;object-fit:contain;" />
+                    <img src="${imageUrl}" alt="${imageTitle}" style="width:100%;height:auto;display:block;" />
                 </div>`;
             }
           });
