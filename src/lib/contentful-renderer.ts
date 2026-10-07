@@ -681,6 +681,9 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
               <span onclick="closeLightbox('${gridId}')" style="position:absolute;top:20px;right:35px;color:#fff;font-size:40px;font-weight:bold;cursor:pointer;z-index:10000;">&times;</span>
               <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default;">
                 <img id="lightbox-image-${gridId}" src="" alt="" style="max-width:100vw;max-height:calc(100vh - 50px);object-fit:contain;" />
+                <div id="lightbox-spinner-${gridId}" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;align-items:center;justify-content:center;pointer-events:none;z-index:10001;">
+                  <div style="width:44px;height:44px;border:4px solid rgba(255,255,255,0.35);border-top-color:#ffffff;border-radius:50%;animation:lightbox-spinner-spin 0.8s linear infinite;"></div>
+                </div>
                 <div id="lightbox-caption-${gridId}" style="color:#fff;padding:0.25rem 0.5rem;font-size:1.125rem;"></div>
               </div>
             </div>
@@ -691,6 +694,22 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
               window.lightboxCurrentGridId = window.lightboxCurrentGridId || null;
               window.lightboxTransitionSeq = window.lightboxTransitionSeq || {};
               window.lightboxTransitionTimer = window.lightboxTransitionTimer || {};
+
+              if (!window.lightboxSpinnerStylesInitialized) {
+                const spinnerStyle = document.createElement('style');
+                spinnerStyle.textContent = '@keyframes lightbox-spinner-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+                document.head.appendChild(spinnerStyle);
+                window.lightboxSpinnerStylesInitialized = true;
+              }
+
+              if (!window.toggleLightboxSpinner) {
+                window.toggleLightboxSpinner = function(gridId, shouldShow) {
+                  const spinner = document.getElementById('lightbox-spinner-' + gridId);
+                  if (spinner) {
+                    spinner.style.display = shouldShow ? 'flex' : 'none';
+                  }
+                };
+              }
               
               window.lightboxData['${gridId}'] = ${JSON.stringify(images.map((img: any) => ({
                 url: img?.fields?.file?.url ? `https:${img.fields.file.url}` : '',
@@ -713,6 +732,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                     document.body.style.overflow = 'hidden';
                     window.lightboxCurrentIndex[gridId] = index;
                     window.lightboxCurrentGridId = gridId;
+                    window.toggleLightboxSpinner(gridId, false);
                   }
                 };
               }
@@ -734,40 +754,66 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
 
                   const outOffset = direction === 'left' ? -72 : 72;
                   const inOffset = -outOffset;
-                  image.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
-                  caption.style.transition = 'opacity 0.18s ease';
-                  image.style.transform = 'translateX(' + outOffset + 'px)';
-                  image.style.opacity = '0';
-                  caption.style.opacity = '0';
-
-                  if (window.lightboxTransitionTimer[gridId]) {
-                    clearTimeout(window.lightboxTransitionTimer[gridId]);
-                  }
-
-                  window.lightboxTransitionTimer[gridId] = setTimeout(function() {
+                  const runTransition = function() {
                     if (window.lightboxTransitionSeq[gridId] !== seq) {
                       return;
                     }
 
-                    image.style.transition = 'none';
-                    image.src = data.url;
-                    image.alt = data.title;
-                    caption.textContent = data.title || data.description;
-
-                    image.style.transform = 'translateX(' + inOffset + 'px)';
+                    image.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
+                    caption.style.transition = 'opacity 0.18s ease';
+                    image.style.transform = 'translateX(' + outOffset + 'px)';
                     image.style.opacity = '0';
+                    caption.style.opacity = '0';
 
-                    requestAnimationFrame(function() {
+                    if (window.lightboxTransitionTimer[gridId]) {
+                      clearTimeout(window.lightboxTransitionTimer[gridId]);
+                    }
+
+                    window.lightboxTransitionTimer[gridId] = setTimeout(function() {
                       if (window.lightboxTransitionSeq[gridId] !== seq) {
                         return;
                       }
-                      image.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-                      caption.style.transition = 'opacity 0.22s ease';
-                      image.style.transform = 'translateX(0)';
-                      image.style.opacity = '1';
-                      caption.style.opacity = '1';
-                    });
-                  }, 180);
+
+                      image.style.transition = 'none';
+                      image.src = data.url;
+                      image.alt = data.title;
+                      caption.textContent = data.title || data.description;
+
+                      image.style.transform = 'translateX(' + inOffset + 'px)';
+                      image.style.opacity = '0';
+
+                      requestAnimationFrame(function() {
+                        if (window.lightboxTransitionSeq[gridId] !== seq) {
+                          return;
+                        }
+                        image.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+                        caption.style.transition = 'opacity 0.22s ease';
+                        image.style.transform = 'translateX(0)';
+                        image.style.opacity = '1';
+                        caption.style.opacity = '1';
+                      });
+                    }, 180);
+                  };
+
+                  const preload = new Image();
+                  let preloadHandled = false;
+                  const onPreloadSettled = function() {
+                    if (preloadHandled) {
+                      return;
+                    }
+                    preloadHandled = true;
+                    window.toggleLightboxSpinner(gridId, false);
+                    runTransition();
+                  };
+
+                  window.toggleLightboxSpinner(gridId, true);
+                  preload.onload = onPreloadSettled;
+                  preload.onerror = onPreloadSettled;
+                  preload.src = data.url;
+
+                  if (preload.complete) {
+                    onPreloadSettled();
+                  }
                 };
               }
               
@@ -809,6 +855,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                     if (window.lightboxTransitionTimer[gridId]) {
                       clearTimeout(window.lightboxTransitionTimer[gridId]);
                     }
+                    window.toggleLightboxSpinner(gridId, false);
                     const image = document.getElementById('lightbox-image-' + gridId);
                     const caption = document.getElementById('lightbox-caption-' + gridId);
                     if (image) {
@@ -1056,6 +1103,9 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
               <span onclick="closeLightbox('${gridId}')" style="position:absolute;top:20px;right:35px;color:#fff;font-size:40px;font-weight:bold;cursor:pointer;z-index:10000;">&times;</span>
               <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default;">
                 <img id="lightbox-image-${gridId}" src="" alt="" style="max-width:100vw;max-height:calc(100vh - 50px);object-fit:contain;" />
+                <div id="lightbox-spinner-${gridId}" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;align-items:center;justify-content:center;pointer-events:none;z-index:10001;">
+                  <div style="width:44px;height:44px;border:4px solid rgba(255,255,255,0.35);border-top-color:#ffffff;border-radius:50%;animation:lightbox-spinner-spin 0.8s linear infinite;"></div>
+                </div>
                 <div id="lightbox-caption-${gridId}" style="color:#fff;padding:0.25rem 0.5rem;font-size:1.125rem;"></div>
               </div>
             
@@ -1065,6 +1115,22 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
               window.lightboxCurrentGridId = window.lightboxCurrentGridId || null;
               window.lightboxTransitionSeq = window.lightboxTransitionSeq || {};
               window.lightboxTransitionTimer = window.lightboxTransitionTimer || {};
+
+              if (!window.lightboxSpinnerStylesInitialized) {
+                const spinnerStyle = document.createElement('style');
+                spinnerStyle.textContent = '@keyframes lightbox-spinner-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+                document.head.appendChild(spinnerStyle);
+                window.lightboxSpinnerStylesInitialized = true;
+              }
+
+              if (!window.toggleLightboxSpinner) {
+                window.toggleLightboxSpinner = function(gridId, shouldShow) {
+                  const spinner = document.getElementById('lightbox-spinner-' + gridId);
+                  if (spinner) {
+                    spinner.style.display = shouldShow ? 'flex' : 'none';
+                  }
+                };
+              }
               
               window.lightboxData['${gridId}'] = ${JSON.stringify(images.map((img: any) => ({
                 url: img?.fields?.file?.url ? `https:${img.fields.file.url}` : '',
@@ -1087,6 +1153,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                     document.body.style.overflow = 'hidden';
                     window.lightboxCurrentIndex[gridId] = index;
                     window.lightboxCurrentGridId = gridId;
+                    window.toggleLightboxSpinner(gridId, false);
                   }
                 };
               }
@@ -1108,40 +1175,66 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
 
                   const outOffset = direction === 'left' ? -72 : 72;
                   const inOffset = -outOffset;
-                  image.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
-                  caption.style.transition = 'opacity 0.18s ease';
-                  image.style.transform = 'translateX(' + outOffset + 'px)';
-                  image.style.opacity = '0';
-                  caption.style.opacity = '0';
-
-                  if (window.lightboxTransitionTimer[gridId]) {
-                    clearTimeout(window.lightboxTransitionTimer[gridId]);
-                  }
-
-                  window.lightboxTransitionTimer[gridId] = setTimeout(function() {
+                  const runTransition = function() {
                     if (window.lightboxTransitionSeq[gridId] !== seq) {
                       return;
                     }
 
-                    image.style.transition = 'none';
-                    image.src = data.url;
-                    image.alt = data.title;
-                    caption.textContent = data.title || data.description;
-
-                    image.style.transform = 'translateX(' + inOffset + 'px)';
+                    image.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
+                    caption.style.transition = 'opacity 0.18s ease';
+                    image.style.transform = 'translateX(' + outOffset + 'px)';
                     image.style.opacity = '0';
+                    caption.style.opacity = '0';
 
-                    requestAnimationFrame(function() {
+                    if (window.lightboxTransitionTimer[gridId]) {
+                      clearTimeout(window.lightboxTransitionTimer[gridId]);
+                    }
+
+                    window.lightboxTransitionTimer[gridId] = setTimeout(function() {
                       if (window.lightboxTransitionSeq[gridId] !== seq) {
                         return;
                       }
-                      image.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-                      caption.style.transition = 'opacity 0.22s ease';
-                      image.style.transform = 'translateX(0)';
-                      image.style.opacity = '1';
-                      caption.style.opacity = '1';
-                    });
-                  }, 180);
+
+                      image.style.transition = 'none';
+                      image.src = data.url;
+                      image.alt = data.title;
+                      caption.textContent = data.title || data.description;
+
+                      image.style.transform = 'translateX(' + inOffset + 'px)';
+                      image.style.opacity = '0';
+
+                      requestAnimationFrame(function() {
+                        if (window.lightboxTransitionSeq[gridId] !== seq) {
+                          return;
+                        }
+                        image.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+                        caption.style.transition = 'opacity 0.22s ease';
+                        image.style.transform = 'translateX(0)';
+                        image.style.opacity = '1';
+                        caption.style.opacity = '1';
+                      });
+                    }, 180);
+                  };
+
+                  const preload = new Image();
+                  let preloadHandled = false;
+                  const onPreloadSettled = function() {
+                    if (preloadHandled) {
+                      return;
+                    }
+                    preloadHandled = true;
+                    window.toggleLightboxSpinner(gridId, false);
+                    runTransition();
+                  };
+
+                  window.toggleLightboxSpinner(gridId, true);
+                  preload.onload = onPreloadSettled;
+                  preload.onerror = onPreloadSettled;
+                  preload.src = data.url;
+
+                  if (preload.complete) {
+                    onPreloadSettled();
+                  }
                 };
               }
               
@@ -1183,6 +1276,7 @@ export async function createRenderOptions(doc: Document, entryHrefById: EntryHre
                     if (window.lightboxTransitionTimer[gridId]) {
                       clearTimeout(window.lightboxTransitionTimer[gridId]);
                     }
+                    window.toggleLightboxSpinner(gridId, false);
                     const image = document.getElementById('lightbox-image-' + gridId);
                     const caption = document.getElementById('lightbox-caption-' + gridId);
                     if (image) {
