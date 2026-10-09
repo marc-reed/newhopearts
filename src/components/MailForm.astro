@@ -85,8 +85,17 @@ const fieldIdPrefix = `mail-${formType || 'form'}`.replace(/[^a-z0-9-]/gi, '-').
   </div>
 </div>
 
-{captchaSiteKey && <script src={`https://www.google.com/recaptcha/api.js?render=${captchaSiteKey}`}></script>}
+{captchaSiteKey && (
+  <script
+    data-recaptcha-script
+    src={`https://www.google.com/recaptcha/api.js?render=${captchaSiteKey}`}
+    onload="window.__newHopeRecaptchaState = { status: 'loaded', failed: false };"
+    onerror="window.__newHopeRecaptchaState = { status: 'failed', failed: true, message: 'Google reCAPTCHA failed to load. Please refresh the page and try again.' };"
+  ></script>
+)}
 <script is:inline define:vars={{ captchaSiteKey }}>
+  window.__newHopeRecaptchaState = window.__newHopeRecaptchaState || { status: 'loading', failed: false };
+
   const mailFormRoots = document.querySelectorAll('[data-mail-form]');
 
   const initializeMailForm = (root) => {
@@ -163,7 +172,12 @@ const fieldIdPrefix = `mail-${formType || 'form'}`.replace(/[^a-z0-9-]/gi, '-').
       }
 
       if (!window.grecaptcha) {
-        const message = 'reCAPTCHA is still loading. Please try again.';
+        const recaptchaState = window.__newHopeRecaptchaState || { status: 'unknown', failed: false };
+        const message = recaptchaState.failed
+          ? 'Google reCAPTCHA failed to load. Please refresh the page and try again.'
+          : recaptchaState.status === 'loading'
+            ? 'reCAPTCHA is still initializing. Please wait a moment and try again.'
+            : 'reCAPTCHA is not available right now. Please refresh the page and try again.';
         setStatus(message, true);
         showModal({ title: 'Submission Error', message, isError: true });
         return;
