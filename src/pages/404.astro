@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Page Not Found | New Hope Arts">
+  <section class="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6 lg:px-8">
+    <p class="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-red-600">404 Error</p>
+    <h1 class="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Page not found</h1>
+    <p class="mb-8 text-lg text-gray-600">
+      The page you were looking for may have moved, been removed, or never existed.
+    </p>
+
+    <div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
+      <a
+        href="/"
+        class="inline-flex items-center justify-center rounded-md px-6 py-3 text-base font-medium text-white no-underline transition hover:opacity-90"
+        style="background: #242424;"
+      >
+        Return Home
+      </a>
+      <a
+        href="/contact-us"
+        class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-800 no-underline transition hover:bg-gray-50"
+      >
+        Contact Us
+      </a>
+    </div>
+  </section>
+</Layout>
